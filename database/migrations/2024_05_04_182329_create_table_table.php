@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('table', function (Blueprint $table) {
             $table->id();
+            $table->integer('table_number');
+            $table->integer('capacity');
             $table->timestamps();
         });
     }
