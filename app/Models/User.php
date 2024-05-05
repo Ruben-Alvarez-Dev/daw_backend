@@ -2,45 +2,46 @@
 
 namespace App\Models;
 
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
-class User extends Model
+class User extends Authenticatable
 {
-    use HasFactory;
+    use HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
      *
-     * @var array
+     * @var array<int, string>
      */
     protected $fillable = [
         'name',
-        'first_surname',
-        'second_surname',
         'email',
-        'phone',
         'password',
-        'is_admin',
     ];
 
     /**
-     * Get the user's full name.
+     * The attributes that should be hidden for serialization.
      *
-     * @return string
+     * @var array<int, string>
      */
-    public function getFullNameAttribute()
-    {
-        return $this->name . ' ' . $this->first_surname . ' ' . $this->second_surname;
-    }
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
 
     /**
-     * Relationship with Reservation model.
+     * Get the attributes that should be cast.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return array<string, string>
      */
-    public function reservations()
+    protected function casts(): array
     {
-        return $this->hasMany(Reservation::class);
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
     }
 }
