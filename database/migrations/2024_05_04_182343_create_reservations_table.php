@@ -20,8 +20,8 @@ return new class extends Migration
             $table->integer('num_guests');
             $table->string('status');
             $table->timestamps();
-            $table->foreign('user_id')->references('id')->on('user');
-            $table->foreign('table_id')->references('id')->on('table');
+            $table->foreign('user_id')->references('id')->on('users');
+            $table->foreign('table_id')->references('id')->on('tables');
         });
     }
 
