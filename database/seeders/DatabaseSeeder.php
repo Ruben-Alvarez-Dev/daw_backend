@@ -2,22 +2,28 @@
 
 namespace Database\Seeders;
 
+use App\Models\Reservation;
+use App\Models\Table;
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
     /**
      * Seed the application's database.
+     *
+     * @return void
      */
-    public function run(): void
+    public function run()
     {
-        // User::factory(10)->create();
+        // Crear 5 usuarios, incluyendo 1 administrador
+        if (User::count() == 0) {
+            User::factory()->count(4)->create();
+            User::factory()->create(['is_admin' => true]);
+        }
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // Crear 12 mesas
+        Table::factory()->count(12)->create();
+
     }
 }
