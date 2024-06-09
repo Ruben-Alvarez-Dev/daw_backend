@@ -9,24 +9,25 @@ use Illuminate\Http\Request;
 class ReservationController extends Controller
 {
     public function index()
-    {
-        $reservations = Reservation::all();
+{
+    $reservations = Reservation::all();
 
-        // Opcional: carga las mesas relacionadas para cada reserva
-        foreach ($reservations as $reservation) {
-            $tables = [];
-            if (!is_null($reservation->table_ids) && $reservation->table_ids !== '') {
-                $tableIds = json_decode($reservation->table_ids, true);
-                if (is_array($tableIds)) {
-                    $tables = Table::whereIn('table_id', $tableIds)->get();
-                }
+    // Opcional: carga las mesas relacionadas para cada reserva
+    foreach ($reservations as $reservation) {
+        $tables = [];
+        if (is_array($reservation->table_ids)) {
+            $tables = Table::whereIn('table_id', $reservation->table_ids)->get();
+        } elseif (is_string($reservation->table_ids)) {
+            $tableIds = json_decode($reservation->table_ids, true);
+            if (is_array($tableIds)) {
+                $tables = Table::whereIn('table_id', $tableIds)->get();
             }
-            $reservation->setAttribute('tables', $tables);
         }
-
-        return response()->json($reservations);
+        $reservation->setAttribute('tables', $tables);
     }
 
+    return response()->json($reservations);
+}
     public function show($id)
     {
         $reservation = Reservation::findOrFail($id);
