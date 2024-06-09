@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('tables', function (Blueprint $table) {
             $table->id('table_id');
             $table->string('number');
-            $table->unsignedInteger('capacity');
+            $table->unsignedTinyInteger('capacity');
             $table->timestamps();
         });
     }

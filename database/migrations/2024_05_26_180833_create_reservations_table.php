@@ -9,15 +9,15 @@ return new class extends Migration
     public function up()
     {
         Schema::create('reservations', function (Blueprint $table) {
-            $table->id('reservation_id');
+            $table->id('reservation_id'); // Clave primaria
             $table->unsignedBigInteger('user_id');
-            $table->json('table_ids');
+            $table->json('table_ids')->nullable();
             $table->unsignedInteger('pax_number');
             $table->date('date');
             $table->time('time');
             $table->enum('status', ['pending', 'confirmed', 'canceled'])->default('pending');
-            $table->timestamps();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->timestamps();
         });
     }
 

@@ -16,9 +16,8 @@ class TableController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'number' => 'required|unique:tables',
-            'capacity' => 'required|in:2,4,8,10',
-            'status' => 'required|in:pending,confirmed,canceled',
+            'number' => 'required|unique:tables,number',
+            'capacity' => 'required',
         ]);
 
         $table = Table::create($validatedData);
@@ -31,16 +30,10 @@ class TableController extends Controller
         return response()->json($table);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $table_id)
     {
-        $validatedData = $request->validate([
-            'number' => 'required|unique:tables,number,' . $id,
-            'capacity' => 'required|in:2,4,8,10',
-            'status' => 'required|in:pending,confirmed,canceled',
-        ]);
-
-        $table = Table::findOrFail($id);
-        $table->update($validatedData);
+        $table = Table::findOrFail($table_id);
+        $table->update($request->all());
 
         return response()->json($table);
     }
