@@ -35,7 +35,7 @@ class Table extends Model
      * @var string
      */
     protected $attributes = [
-        'status' => 'free',
+        'status' => 'available',
     ];
 
     /**

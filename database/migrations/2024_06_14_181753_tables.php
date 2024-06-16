@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->string('name');
             $table->unsignedSmallInteger('capacity');
-            $table->enum('status', ['free', 'scheduled', 'occupied'])->default('free');
+            $table->enum('status', ['available', 'scheduled', 'seated'])->default('available');
             $table->timestamps();
         });
     }

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->unsignedSmallInteger('pax_number');
             $table->date('date');
             $table->time('time');
-            $table->enum('status', ['pending', 'confirmed', 'cancelled'])->default('pending');
+            $table->enum('status', ['pending', 'confirmed','seated', 'cancelled'])->default('pending');
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
