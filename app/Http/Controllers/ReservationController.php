@@ -24,6 +24,7 @@ class ReservationController extends Controller
         // Validar los datos recibidos
         $validatedData = $request->validate([
             'user_id' => 'required|integer',
+            'tables_ids' => 'nullable|array',
             'pax_number' => 'required|integer',
             'date' => 'required|date',
             'time' => 'required',
