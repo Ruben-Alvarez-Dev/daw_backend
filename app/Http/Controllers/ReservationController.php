@@ -24,7 +24,7 @@ class ReservationController extends Controller
         // Validar los datos recibidos
         $validatedData = $request->validate([
             'user_id' => 'required|integer',
-            'tables_ids' => 'nullable|array',
+            'table_ids' => 'nullable|array', // Cambiado a 'table_ids'
             'pax_number' => 'required|integer',
             'date' => 'required|date',
             'time' => 'required',
@@ -55,7 +55,19 @@ class ReservationController extends Controller
      */
     public function update(Request $request, Reservation $reservation)
     {
-        $reservation->update($request->all());
+        // Validar los datos recibidos
+        $validatedData = $request->validate([
+            'user_id' => 'required|integer',
+            'table_ids' => 'nullable|array', // Cambiado a 'table_ids'
+            'pax_number' => 'required|integer',
+            'date' => 'required|date',
+            'time' => 'required',
+            'status' => 'required|in:pending,confirmed,cancelled',
+        ]);
+
+        // Actualizar la reserva
+        $reservation->update($validatedData);
+
         return response()->json($reservation);
     }
 
