@@ -21,8 +21,24 @@ class ReservationController extends Controller
      */
     public function store(Request $request)
     {
-        $reservation = Reservation::create($request->all());
-        return response()->json($reservation, 201);
+        // Validar los datos recibidos
+        $validatedData = $request->validate([
+            'user_id' => 'required|integer',
+            'pax_number' => 'required|integer',
+            'date' => 'required|date',
+            'time' => 'required',
+            'status' => 'required|in:pending,confirmed,cancelled',
+        ]);
+
+        // Crear la reserva
+        $reservation = Reservation::create($validatedData);
+
+        // Verificar si la reserva se creó exitosamente
+        if ($reservation) {
+            return response()->json($reservation, 201);
+        } else {
+            return response()->json(['error' => 'No se pudo crear la reserva'], 500);
+        }
     }
 
     /**

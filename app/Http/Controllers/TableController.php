@@ -21,7 +21,13 @@ class TableController extends Controller
      */
     public function store(Request $request)
     {
-        $table = Table::create($request->all());
+        $validatedData = $request->validate([
+            'name' => 'required|string',
+            'capacity' => 'required|integer',
+            'status' => 'sometimes|in:free,scheduled,occupied',
+        ]);
+
+        $table = Table::create($validatedData);
         return response()->json($table, 201);
     }
 
@@ -38,7 +44,13 @@ class TableController extends Controller
      */
     public function update(Request $request, Table $table)
     {
-        $table->update($request->all());
+        $validatedData = $request->validate([
+            'name' => 'sometimes|string',
+            'capacity' => 'sometimes|integer',
+            'status' => 'sometimes|in:free,scheduled,occupied',
+        ]);
+
+        $table->update($validatedData);
         return response()->json($table);
     }
 

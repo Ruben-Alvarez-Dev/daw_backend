@@ -17,6 +17,25 @@ class Table extends Model
     protected $fillable = [
         'name',
         'capacity',
+        'status',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'status' => 'string',
+    ];
+
+    /**
+     * The default value for the status attribute.
+     *
+     * @var string
+     */
+    protected $attributes = [
+        'status' => 'free',
     ];
 
     /**
