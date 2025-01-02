@@ -13,13 +13,11 @@ return new class extends Migration
     {
         Schema::create('tables', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->integer('capacity')->default(2);
-            $table->boolean('isActive')->default(true);
-            $table->unsignedBigInteger('created_by');
+            $table->integer('number')->unique();
+            $table->integer('capacity');
+            $table->enum('status', ['available', 'occupied', 'reserved'])->default('available');
+            $table->foreignId('created_by')->constrained('users');
             $table->timestamps();
-
-            $table->foreign('created_by')->references('id')->on('users');
         });
     }
 

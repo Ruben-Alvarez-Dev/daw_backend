@@ -4,36 +4,71 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Reservation;
+use App\Models\Table;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class ReservationController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:api');
+    }
+
     public function index()
     {
+        $user = auth()->user();
+        $reservations = $user->isAdmin() 
+            ? Reservation::with(['user', 'table'])->get()
+            : Reservation::where('user_id', $user->id)->with(['user', 'table'])->get();
+
         return response()->json([
             'status' => 'success',
-            'data' => Reservation::with('user')->get()
+            'data' => $reservations
         ]);
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'tables_ids' => 'nullable|array',
-            'tables_ids.*' => 'exists:tables,id',
+            'table_id' => 'required|exists:tables,id',
+            'date' => 'required|date|after_or_equal:today',
+            'time' => 'required|date_format:H:i:s',
             'guests' => 'required|integer|min:1',
-            'datetime' => 'required|date',
-            'comments' => 'nullable|string'
+            'notes' => 'nullable|string'
         ]);
 
+        // Verificar si la mesa está disponible
+        $table = Table::findOrFail($request->table_id);
+        if (!$table->isAvailable()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Table is not available'
+            ], 422);
+        }
+
+        // Verificar si ya existe una reserva para esta mesa en la misma fecha y hora
+        $existingReservation = Reservation::where('table_id', $request->table_id)
+            ->where('date', $request->date)
+            ->where('time', $request->time)
+            ->where('status', 'confirmed')
+            ->first();
+
+        if ($existingReservation) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Table is already reserved for this date and time'
+            ], 422);
+        }
+
         $reservation = Reservation::create([
-            'user_id' => $request->user_id,
-            'tables_ids' => $request->tables_ids,
+            'user_id' => auth()->id(),
+            'table_id' => $request->table_id,
+            'date' => $request->date,
+            'time' => $request->time,
             'guests' => $request->guests,
-            'datetime' => $request->datetime,
-            'comments' => $request->comments,
-            'created_by' => auth()->id()
+            'notes' => $request->notes,
+            'status' => 'confirmed'
         ]);
 
         return response()->json([
@@ -45,46 +80,24 @@ class ReservationController extends Controller
 
     public function show(Reservation $reservation)
     {
+        $this->authorize('view', $reservation);
+
         return response()->json([
             'status' => 'success',
-            'data' => $reservation->load('user')
+            'data' => $reservation->load(['user', 'table'])
         ]);
     }
 
     public function update(Request $request, Reservation $reservation)
     {
+        $this->authorize('update', $reservation);
+
         $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'tables_ids' => 'nullable|array',
-            'tables_ids.*' => 'exists:tables,id',
-            'guests' => 'required|integer|min:1',
-            'datetime' => 'required|date',
-            'comments' => 'nullable|string'
-        ]);
-
-        $reservation->update($request->all());
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Reservation updated successfully',
-            'data' => $reservation
-        ]);
-    }
-
-    public function patch(Request $request, Reservation $reservation)
-    {
-        $validatedData = $request->validate([
-            'user_id' => 'sometimes|exists:users,id',
-            'tables_ids' => 'sometimes|nullable|array',
-            'tables_ids.*' => 'exists:tables,id',
             'guests' => 'sometimes|integer|min:1',
-            'datetime' => 'sometimes|date',
-            'comments' => 'sometimes|nullable|string',
-            'status' => 'sometimes|string|in:pending,confirmed,cancelled',
-            'isActive' => 'sometimes|boolean'
+            'notes' => 'sometimes|nullable|string'
         ]);
 
-        $reservation->update($validatedData);
+        $reservation->update($request->only(['guests', 'notes']));
 
         return response()->json([
             'status' => 'success',
@@ -95,11 +108,13 @@ class ReservationController extends Controller
 
     public function destroy(Reservation $reservation)
     {
-        $reservation->delete();
+        $this->authorize('delete', $reservation);
+
+        $reservation->update(['status' => 'cancelled']);
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Reservation deleted successfully'
+            'message' => 'Reservation cancelled successfully'
         ]);
     }
 }

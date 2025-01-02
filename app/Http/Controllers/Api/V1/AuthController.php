@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 
 class AuthController extends Controller
 {
@@ -15,68 +16,116 @@ class AuthController extends Controller
         $this->middleware('auth:api', ['except' => ['login', 'register']]);
     }
 
-    public function login(Request $request)
+    public function register(Request $request): JsonResponse
     {
-        $request->validate([
-            'email' => 'required|string|email',
-            'password' => 'required|string',
-        ]);
-        
-        $credentials = $request->only('email', 'password');
-        $token = Auth::attempt($credentials);
-        
-        if (!$token) {
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255|unique:users',
+                'password' => 'required|string|min:6',
+            ]);
+
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'role' => 'customer'
+            ]);
+
+            $token = Auth::login($user);
+            
+            if (!$token) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Could not create access token'
+                ], 500);
+            }
+
             return response()->json([
-                'message' => 'Unauthorized',
-            ], 401);
+                'status' => 'success',
+                'message' => 'User created successfully',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                ],
+                'token' => $token
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        return $this->respondWithToken($token);
     }
 
-    public function register(Request $request)
+    public function login(Request $request): JsonResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6',
-        ]);
+        try {
+            $credentials = $request->validate([
+                'email' => 'required|email',
+                'password' => 'required|string',
+            ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+            if (!$token = Auth::attempt($credentials)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid credentials'
+                ], 401);
+            }
 
-        $token = Auth::login($user);
-        return $this->respondWithToken($token);
+            $user = Auth::user();
+
+            return response()->json([
+                'status' => 'success',
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    public function logout()
+    public function me(): JsonResponse
+    {
+        return response()->json([
+            'id' => auth()->user()->id,
+            'name' => auth()->user()->name,
+            'email' => auth()->user()->email,
+            'role' => auth()->user()->role,
+        ]);
+    }
+
+    public function logout(): JsonResponse
     {
         Auth::logout();
         return response()->json([
-            'message' => 'Successfully logged out',
+            'status' => 'success',
+            'message' => 'Successfully logged out'
         ]);
     }
 
-    public function refresh()
-    {
-        return $this->respondWithToken(Auth::refresh());
-    }
-
-    public function me()
-    {
-        return response()->json(Auth::user());
-    }
-
-    protected function respondWithToken($token)
+    public function refresh(): JsonResponse
     {
         return response()->json([
-            'access_token' => $token,
+            'token' => Auth::refresh(),
             'token_type' => 'bearer',
-            'expires_in' => auth()->factory()->getTTL() * 60,
-            'user' => auth()->user()
+            'expires_in' => auth()->factory()->getTTL() * 60
         ]);
     }
 }

@@ -5,12 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
+use App\Models\Reservation;
+use App\Models\Table;
 
 class User extends Authenticatable implements JWTSubject
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -21,9 +22,7 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'email',
         'password',
-        'phone',
-        'address',
-        'city'
+        'role'
     ];
 
     /**
@@ -44,7 +43,6 @@ class User extends Authenticatable implements JWTSubject
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
-        'isActive' => 'boolean',
     ];
 
     /**
@@ -67,11 +65,40 @@ class User extends Authenticatable implements JWTSubject
         return [];
     }
 
+    /**
+     * Serialize the model to an array.
+     *
+     * @return array
+     */
+    public function toArray()
+    {
+        $array = parent::toArray();
+        unset($array['password']);
+        unset($array['remember_token']);
+        return $array;
+    }
+
+    /**
+     * Check if the user is an admin
+     *
+     * @return bool
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Get the reservations for the user.
+     */
     public function reservations()
     {
         return $this->hasMany(Reservation::class);
     }
 
+    /**
+     * Get the tables created by the user.
+     */
     public function tables()
     {
         return $this->hasMany(Table::class, 'created_by');

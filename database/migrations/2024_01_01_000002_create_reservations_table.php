@@ -13,18 +13,17 @@ return new class extends Migration
     {
         Schema::create('reservations', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id');
-            $table->json('tables_ids')->nullable();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('table_id')->constrained()->onDelete('cascade');
+            $table->date('date');
+            $table->time('time');
             $table->integer('guests');
-            $table->dateTime('datetime');
-            $table->text('comments')->nullable();
-            $table->string('status')->default('pending');
-            $table->boolean('isActive')->default(true);
-            $table->unsignedBigInteger('created_by');
+            $table->text('notes')->nullable();
+            $table->enum('status', ['confirmed', 'cancelled', 'completed'])->default('confirmed');
             $table->timestamps();
 
-            $table->foreign('user_id')->references('id')->on('users');
-            $table->foreign('created_by')->references('id')->on('users');
+            // Una mesa no puede tener más de una reserva activa para la misma fecha y hora
+            $table->unique(['table_id', 'date', 'time', 'status']);
         });
     }
 

@@ -8,6 +8,12 @@ use Illuminate\Http\Request;
 
 class TableController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:api');
+        $this->middleware('admin')->only(['store', 'update', 'destroy']);
+    }
+
     public function index()
     {
         return response()->json([
@@ -19,13 +25,15 @@ class TableController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'capacity' => 'required|integer|min:1'
+            'number' => 'required|integer|unique:tables',
+            'capacity' => 'required|integer|min:1',
+            'status' => 'required|in:available,occupied,reserved'
         ]);
 
         $table = Table::create([
-            'name' => $request->name,
+            'number' => $request->number,
             'capacity' => $request->capacity,
+            'status' => $request->status,
             'created_by' => auth()->id()
         ]);
 
@@ -47,28 +55,11 @@ class TableController extends Controller
     public function update(Request $request, Table $table)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'capacity' => 'required|integer|min:1'
-        ]);
-
-        $table->update($request->all());
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Table updated successfully',
-            'data' => $table
-        ]);
-    }
-
-    public function patch(Request $request, Table $table)
-    {
-        $validatedData = $request->validate([
-            'name' => 'sometimes|string|max:255',
             'capacity' => 'sometimes|integer|min:1',
-            'isActive' => 'sometimes|boolean'
+            'status' => 'sometimes|in:available,occupied,reserved'
         ]);
 
-        $table->update($validatedData);
+        $table->update($request->only(['capacity', 'status']));
 
         return response()->json([
             'status' => 'success',

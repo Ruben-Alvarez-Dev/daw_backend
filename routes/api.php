@@ -49,9 +49,7 @@ Route::group([
         Route::get('tables/available', [TableController::class, 'available']);
         Route::get('tables/capacity/{min}', [TableController::class, 'findByCapacity']);
         
-        // CRUD Reservas
-        Route::resource('reservations', ReservationController::class)->except(['create', 'edit']);
-        Route::patch('reservations/{reservation}/status', [ReservationController::class, 'patch']);
+        // Rutas administrativas de reservas
         Route::get('reservations/date/{date}', [ReservationController::class, 'findByDate']);
         Route::get('reservations/user/{user}', [ReservationController::class, 'findByUser']);
         Route::get('reservations/status/{status}', [ReservationController::class, 'findByStatus']);
@@ -63,13 +61,15 @@ Route::group([
         Route::get('profile', [UserController::class, 'profile']);
         Route::put('profile', [UserController::class, 'updateProfile']);
         Route::patch('profile', [UserController::class, 'patchProfile']);
-
-        // Reservas (limitadas)
-        Route::get('my-reservations', [ReservationController::class, 'myReservations']);
-        Route::get('my-reservations/{reservation}', [ReservationController::class, 'showMyReservation']);
-        Route::post('reservations', [ReservationController::class, 'store']);
         
         // Consultas públicas
         Route::get('tables/available', [TableController::class, 'available']);
     });
+
+    // Rutas de reservas (accesibles para todos los usuarios autenticados)
+    Route::resource('reservations', ReservationController::class)->except(['create', 'edit']);
+    Route::patch('reservations/{reservation}/status', [ReservationController::class, 'patch']);
+    Route::get('reservations/my-reservations', [ReservationController::class, 'myReservations']);
+    Route::get('reservations/my-reservations/{reservation}', [ReservationController::class, 'showMyReservation']);
+    Route::post('reservations', [ReservationController::class, 'store']);
 });
