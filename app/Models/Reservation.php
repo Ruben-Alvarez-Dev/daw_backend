@@ -2,30 +2,29 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\User;
 use App\Models\Table;
-use Carbon\Carbon;
 
 class Reservation extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'datetime',
+        'guests',
+        'status',
         'user_id',
         'table_id',
-        'date',
-        'time',
-        'guests',
-        'notes',
-        'status'
+        'is_active',
+        'created_by'
     ];
 
     protected $casts = [
-        'date' => 'date:Y-m-d',
-        'time' => 'datetime:H:i:s',
-        'guests' => 'integer'
+        'datetime' => 'datetime',
+        'guests' => 'integer',
+        'is_active' => 'boolean'
     ];
 
     public function user()
@@ -38,18 +37,8 @@ class Reservation extends Model
         return $this->belongsTo(Table::class);
     }
 
-    public function isConfirmed()
+    public function creator()
     {
-        return $this->status === 'confirmed';
-    }
-
-    public function isCancelled()
-    {
-        return $this->status === 'cancelled';
-    }
-
-    public function isCompleted()
-    {
-        return $this->status === 'completed';
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

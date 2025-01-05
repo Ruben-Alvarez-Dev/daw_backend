@@ -6,8 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
-use App\Models\Reservation;
-use App\Models\Table;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -16,19 +14,20 @@ class User extends Authenticatable implements JWTSubject
     /**
      * The attributes that are mass assignable.
      *
-     * @var array<int, string>
+     * @var list<string>
      */
     protected $fillable = [
         'name',
         'email',
         'password',
-        'role'
+        'role',
+        'is_active'
     ];
 
     /**
      * The attributes that should be hidden for serialization.
      *
-     * @var array<int, string>
+     * @var list<string>
      */
     protected $hidden = [
         'password',
@@ -65,42 +64,28 @@ class User extends Authenticatable implements JWTSubject
         return [];
     }
 
-    /**
-     * Serialize the model to an array.
-     *
-     * @return array
-     */
-    public function toArray()
-    {
-        $array = parent::toArray();
-        unset($array['password']);
-        unset($array['remember_token']);
-        return $array;
-    }
-
-    /**
-     * Check if the user is an admin
-     *
-     * @return bool
-     */
-    public function isAdmin(): bool
-    {
-        return $this->role === 'admin';
-    }
-
-    /**
-     * Get the reservations for the user.
-     */
     public function reservations()
     {
         return $this->hasMany(Reservation::class);
     }
 
-    /**
-     * Get the tables created by the user.
-     */
-    public function tables()
+    public function createdReservations()
+    {
+        return $this->hasMany(Reservation::class, 'created_by');
+    }
+
+    public function createdTables()
     {
         return $this->hasMany(Table::class, 'created_by');
+    }
+
+    public function createdUsers()
+    {
+        return $this->hasMany(User::class, 'created_by');
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }
