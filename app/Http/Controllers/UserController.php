@@ -54,9 +54,13 @@ class UserController extends Controller
             'phone' => 'required|string|max:255|unique:users'
         ]);
 
+        // Usar el teléfono como contraseña inicial, pero hasheada
+        $password = Hash::make($request->phone);
+
         $user = User::create([
             'name' => $request->name,
             'phone' => $request->phone,
+            'password' => $password,
             'role' => 'customer'
         ]);
 

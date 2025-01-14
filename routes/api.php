@@ -9,7 +9,8 @@ use App\Http\Controllers\ReservationController;
 // Rutas públicas de autenticación
 Route::controller(AuthController::class)->group(function () {
     Route::post('register', 'register');
-    Route::post('login', 'login');
+    Route::post('login/email', 'loginWithEmail');
+    Route::post('login/phone', 'loginWithPhone');
     Route::post('complete-registration', 'completeRegistration');
 });
 

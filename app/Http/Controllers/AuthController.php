@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use Carbon\Carbon;
 
@@ -12,47 +13,39 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
-        // Validar el nombre siempre
         $request->validate([
-            'name' => 'required|string'
+            'name' => 'required|string|max:255',
+            'password' => 'required|string|min:3|confirmed',
         ]);
 
-        // Si hay email, validar email
-        if ($request->filled('email')) {
-            $request->validate([
-                'email' => 'email|unique:users',
-                'password' => 'required|string|confirmed'
-            ]);
-        }
-        // Si hay phone, validar phone
-        else if ($request->filled('phone')) {
-            $request->validate([
-                'phone' => 'string|unique:users',
-                'password' => 'required|string|confirmed'
-            ]);
-        }
-        // Si no hay ninguno, error
-        else {
+        // Validar que al menos se proporcione email o teléfono
+        if (!$request->has('email') && !$request->has('phone')) {
             return response()->json([
-                'message' => 'Se requiere email o teléfono',
-                'errors' => ['auth' => ['Debes proporcionar un email o teléfono']]
-            ], 422);
+                'status' => 'error',
+                'message' => 'Debe proporcionar un email o un teléfono',
+            ], 400);
         }
 
-        $userData = array_filter([
+        // Validar email o teléfono si se proporcionan
+        if ($request->has('email')) {
+            $request->validate(['email' => 'required|string|email|max:255|unique:users']);
+        }
+        if ($request->has('phone')) {
+            $request->validate(['phone' => 'required|string|unique:users']);
+        }
+
+        $user = User::create([
             'name' => $request->name,
-            'email' => $request->email,
-            'phone' => $request->phone,
+            'email' => $request->email ?? null,
+            'phone' => $request->phone ?? null,
             'password' => Hash::make($request->password),
             'role' => 'customer'
         ]);
 
-        $user = User::create($userData);
-
         $token = Auth::login($user);
         return response()->json([
             'status' => 'success',
-            'message' => 'Usuario creado correctamente',
+            'message' => 'Usuario creado exitosamente',
             'user' => $user,
             'authorisation' => [
                 'token' => $token,
@@ -61,29 +54,22 @@ class AuthController extends Controller
         ]);
     }
 
-    public function login(Request $request)
+    public function loginWithEmail(Request $request)
     {
         $request->validate([
-            'email' => 'required_without:phone|email',
-            'phone' => 'required_without:email|string',
+            'email' => 'required|email',
             'password' => 'required|string',
         ]);
 
-        // Determinar si el usuario está intentando entrar con email o teléfono
-        $credentials = [];
-        if ($request->has('email')) {
-            $credentials = [
-                'email' => $request->email,
-                'password' => $request->password
-            ];
-        } else {
-            $credentials = [
-                'phone' => $request->phone,
-                'password' => $request->password
-            ];
-        }
+        // Buscar el usuario primero para debug
+        $user = User::where('email', $request->email)->first();
+        \Log::info('Login attempt:', [
+            'email' => $request->email,
+            'user_found' => $user ? true : false,
+            'user_id' => $user ? $user->id : null
+        ]);
 
-        if (!$token = Auth::attempt($credentials)) {
+        if (!$token = auth()->attempt($request->only(['email', 'password']))) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Credenciales inválidas',
@@ -92,7 +78,33 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'user' => Auth::user(),
+            'user' => auth()->user(),
+            'authorisation' => [
+                'token' => $token,
+                'type' => 'bearer',
+            ]
+        ]);
+    }
+
+    public function loginWithPhone(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        $credentials = $request->only(['phone', 'password']);
+
+        if (!$token = auth()->attempt($credentials)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Credenciales inválidas',
+            ], 401);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'user' => auth()->user(),
             'authorisation' => [
                 'token' => $token,
                 'type' => 'bearer',
