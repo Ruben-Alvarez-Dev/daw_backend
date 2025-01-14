@@ -2,10 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\Reservation;
-use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 
 class Table extends Model
 {
@@ -14,22 +12,15 @@ class Table extends Model
     protected $fillable = [
         'name',
         'capacity',
-        'is_active',
-        'created_by'
+        'status'
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
-        'capacity' => 'integer'
+        'capacity' => 'integer',
     ];
 
     public function reservations()
     {
         return $this->hasMany(Reservation::class);
-    }
-
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'created_by');
     }
 }

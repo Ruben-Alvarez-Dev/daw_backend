@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
+use App\Models\Reservation;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -21,7 +22,8 @@ class User extends Authenticatable implements JWTSubject
         'email',
         'password',
         'role',
-        'is_active'
+        'visits',
+        'phone'
     ];
 
     /**
@@ -35,13 +37,13 @@ class User extends Authenticatable implements JWTSubject
     ];
 
     /**
-     * The attributes that should be cast.
+     * Get the attributes that should be cast.
      *
-     * @var array<string, string>
+     * @return array<string, string>
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password' => 'hashed',
+        'password' => 'hashed'
     ];
 
     /**
@@ -64,28 +66,11 @@ class User extends Authenticatable implements JWTSubject
         return [];
     }
 
+    /**
+     * Get the reservations for the user.
+     */
     public function reservations()
     {
         return $this->hasMany(Reservation::class);
-    }
-
-    public function createdReservations()
-    {
-        return $this->hasMany(Reservation::class, 'created_by');
-    }
-
-    public function createdTables()
-    {
-        return $this->hasMany(Table::class, 'created_by');
-    }
-
-    public function createdUsers()
-    {
-        return $this->hasMany(User::class, 'created_by');
-    }
-
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'created_by');
     }
 }

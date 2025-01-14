@@ -3,82 +3,115 @@
 namespace App\Http\Controllers;
 
 use App\Models\Reservation;
+use App\Models\Table;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class ReservationController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:api');
-    }
-
     public function index()
     {
-        $reservations = Reservation::with(['user', 'table', 'creator'])->get();
-        return response()->json($reservations);
+        if (Auth::user()->role === 'admin') {
+            return Reservation::all();
+        }
+        return Auth::user()->reservations;
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'datetime' => 'required|date',
-            'guests' => 'required|integer|min:1',
-            'table_id' => 'required|exists:tables,id',
-            'user_id' => 'required|exists:users,id'
-        ]);
+        try {
+            $request->validate([
+                'guests' => 'required|integer|min:1',
+                'datetime' => 'required|date|after:now',
+                'tables_ids' => 'nullable|array'
+            ]);
 
-        $reservation = Reservation::create([
-            'datetime' => $request->datetime,
-            'guests' => $request->guests,
-            'table_id' => $request->table_id,
-            'user_id' => $request->user_id,
-            'created_by' => auth()->id()
-        ]);
+            $user = auth()->user();
+            
+            // Crear el array de información del usuario
+            $userInfo = [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'created_at' => now()->toDateTimeString()
+            ];
 
-        return response()->json($reservation->load(['user', 'table', 'creator']), 201);
+            $reservation = Reservation::create([
+                'user_id' => $user->id,
+                'tables_ids' => $request->tables_ids,
+                'guests' => $request->guests,
+                'datetime' => $request->datetime,
+                'status' => 'pending',
+                'user_info' => $userInfo
+            ]);
+
+            return response()->json([
+                'message' => 'Reserva creada exitosamente',
+                'reservation' => $reservation
+            ], 201);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al crear la reserva',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function show(Reservation $reservation)
     {
-        return response()->json($reservation->load(['user', 'table', 'creator']));
+        if ($reservation->user_id !== Auth::id()) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+        return $reservation->load(['user', 'tables']);
     }
 
     public function update(Request $request, Reservation $reservation)
     {
-        $request->validate([
-            'datetime' => 'date',
-            'guests' => 'integer|min:1',
-            'status' => 'in:pending,confirmed,seated,cancelled,no-show',
-            'table_id' => 'exists:tables,id',
-            'user_id' => 'exists:users,id',
-            'is_active' => 'boolean'
+        if ($reservation->user_id !== Auth::id()) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'datetime' => 'required|date|after:now',
+            'guests' => 'required|integer|min:1'
         ]);
 
-        $reservation->update($request->all());
-        return response()->json($reservation->load(['user', 'table', 'creator']));
-    }
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
 
-    public function patch(Request $request, Reservation $reservation)
-    {
-        $request->validate([
-            'datetime' => 'sometimes|date',
-            'guests' => 'sometimes|integer|min:1',
-            'status' => 'sometimes|in:pending,confirmed,seated,cancelled,no-show',
-            'table_id' => 'sometimes|exists:tables,id',
-            'user_id' => 'sometimes|exists:users,id',
-            'is_active' => 'sometimes|boolean'
-        ]);
+        $reservation->datetime = $request->datetime;
+        $reservation->guests = $request->guests;
+        $reservation->save();
 
-        $reservation->update($request->only([
-            'datetime', 'guests', 'status', 'table_id', 'user_id', 'is_active'
-        ]));
-        
-        return response()->json($reservation->load(['user', 'table', 'creator']));
+        return response()->json($reservation);
     }
 
     public function destroy(Reservation $reservation)
     {
+        if ($reservation->user_id !== Auth::id()) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
         $reservation->delete();
         return response()->json(null, 204);
+    }
+
+    public function myReservations()
+    {
+        try {
+            $reservations = Auth::user()->reservations()->orderBy('datetime', 'desc')->get();
+            return response()->json($reservations);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al cargar las reservas'], 500);
+        }
     }
 }

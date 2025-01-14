@@ -6,26 +6,17 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('tables', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->integer('number')->unique();
             $table->integer('capacity');
-            $table->boolean('is_active')->default(true);
-            $table->unsignedBigInteger('created_by')->nullable();
+            $table->enum('status', ['available', 'occupied', 'reserved'])->default('available');
             $table->timestamps();
-
-            $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('tables');
