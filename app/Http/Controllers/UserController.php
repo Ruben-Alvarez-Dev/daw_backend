@@ -70,4 +70,14 @@ class UserController extends Controller
             'user' => $user
         ]);
     }
+
+    public function search(Request $request)
+    {
+        $term = $request->query('term');
+        
+        return User::where('name', 'like', "%{$term}%")
+            ->orWhere('email', 'like', "%{$term}%")
+            ->orWhere('phone', 'like', "%{$term}%")
+            ->get();
+    }
 }

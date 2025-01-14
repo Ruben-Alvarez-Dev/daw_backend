@@ -22,12 +22,15 @@ class ReservationController extends Controller
     {
         try {
             $request->validate([
+                'user_id' => 'required|exists:users,id',
                 'guests' => 'required|integer|min:1',
                 'datetime' => 'required|date|after:now',
+                'status' => 'required|in:pending,confirmed,cancelled,completed',
                 'tables_ids' => 'nullable|array'
             ]);
 
-            $user = auth()->user();
+            // Obtener el usuario de la reserva
+            $user = \App\Models\User::findOrFail($request->user_id);
             
             // Crear el array de información del usuario
             $userInfo = [
@@ -40,10 +43,10 @@ class ReservationController extends Controller
 
             $reservation = Reservation::create([
                 'user_id' => $user->id,
-                'tables_ids' => $request->tables_ids,
+                'tables_ids' => $request->tables_ids ?? [],
                 'guests' => $request->guests,
                 'datetime' => $request->datetime,
-                'status' => 'pending',
+                'status' => $request->status,
                 'user_info' => $userInfo
             ]);
 
@@ -97,12 +100,13 @@ class ReservationController extends Controller
 
     public function destroy(Reservation $reservation)
     {
-        if ($reservation->user_id !== Auth::id()) {
+        // Si es admin, puede eliminar cualquier reserva
+        if (auth()->user()->role !== 'admin') {
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
         $reservation->delete();
-        return response()->json(null, 204);
+        return response()->json(['message' => 'Reserva eliminada con éxito']);
     }
 
     public function myReservations()

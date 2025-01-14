@@ -26,6 +26,7 @@ Route::middleware('auth:api')->group(function () {
     // Users - CRUD completo
     Route::apiResource('users', UserController::class);
     Route::post('users/simple', [UserController::class, 'createSimpleUser']);
+    Route::get('users/search', [UserController::class, 'search']);
     
     // Tables - CRUD completo
     Route::apiResource('tables', TableController::class);
