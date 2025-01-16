@@ -78,24 +78,54 @@ class ReservationController extends Controller
 
     public function update(Request $request, Reservation $reservation)
     {
-        if ($reservation->user_id !== Auth::id()) {
+        // Si es admin, puede editar cualquier reserva
+        if (auth()->user()->role !== 'admin' && $reservation->user_id !== Auth::id()) {
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
-        $validator = Validator::make($request->all(), [
-            'datetime' => 'required|date|after:now',
-            'guests' => 'required|integer|min:1'
-        ]);
+        try {
+            $request->validate([
+                'datetime' => 'required|date',
+                'guests' => 'required|integer|min:1',
+                'status' => 'required|in:pending,confirmed,cancelled,completed',
+                'tables_ids' => 'nullable|array'
+            ]);
 
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            // Si es una actualización de admin, actualizar user_id si se proporciona
+            if (auth()->user()->role === 'admin' && $request->has('user_id')) {
+                $user = \App\Models\User::findOrFail($request->user_id);
+                $reservation->user_id = $user->id;
+                $reservation->user_info = [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'created_at' => now()->toDateTimeString()
+                ];
+            }
+
+            $reservation->datetime = $request->datetime;
+            $reservation->guests = $request->guests;
+            $reservation->status = $request->status;
+            $reservation->tables_ids = $request->tables_ids ?? [];
+            $reservation->save();
+
+            return response()->json([
+                'message' => 'Reserva actualizada exitosamente',
+                'reservation' => $reservation
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al actualizar la reserva',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $reservation->datetime = $request->datetime;
-        $reservation->guests = $request->guests;
-        $reservation->save();
-
-        return response()->json($reservation);
     }
 
     public function destroy(Reservation $reservation)
