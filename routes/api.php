@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TableController;
 use App\Http\Controllers\ReservationController;
+use App\Http\Controllers\ConfigController;
 
 // Rutas públicas de autenticación
 Route::controller(AuthController::class)->group(function () {
@@ -34,4 +35,8 @@ Route::middleware('auth:api')->group(function () {
     // Reservations - CRUD completo
     Route::get('my-reservations', [ReservationController::class, 'myReservations']);
     Route::apiResource('reservations', ReservationController::class);
+    
+    // Rutas de configuración
+    Route::get('/config', [ConfigController::class, 'getConfig']);
+    Route::put('/config', [ConfigController::class, 'updateConfig']);
 });
