@@ -17,6 +17,8 @@ class ConfigController extends Controller
                 'totalCapacity' => 0,
                 'timeEstimateSmall' => 60,
                 'timeEstimateLarge' => 90,
+                'timeInterval' => 15,
+                'simultaneousTables' => 2,
                 'openingHours' => [
                     'afternoon' => [
                         'open' => '13:00',
@@ -33,6 +35,16 @@ class ConfigController extends Controller
         }
 
         $config = json_decode(Storage::get($this->configFile), true);
+        
+        // Asegurar que existan los campos necesarios
+        if (!isset($config['simultaneousTables'])) {
+            $config['simultaneousTables'] = 2;
+        }
+        if (!isset($config['timeInterval'])) {
+            $config['timeInterval'] = 15;
+        }
+        
+        Storage::put($this->configFile, json_encode($config, JSON_PRETTY_PRINT));
         return response()->json($config);
     }
 

@@ -148,4 +148,50 @@ class ReservationController extends Controller
             return response()->json(['error' => 'Error al cargar las reservas'], 500);
         }
     }
+
+    public function getByDate($date)
+    {
+        try {
+            // Validar el formato de fecha
+            $validator = Validator::make(['date' => $date], [
+                'date' => 'required|date_format:Y-m-d'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Formato de fecha inválido',
+                    'errors' => $validator->errors()
+                ], 400);
+            }
+
+            // Construir el rango de fechas para el día completo
+            $startDate = $date . ' 00:00:00';
+            $endDate = $date . ' 23:59:59';
+
+            // Obtener las reservas del día
+            $reservations = Reservation::whereBetween('datetime', [$startDate, $endDate])
+                ->where('status', '!=', 'cancelled')
+                ->get()
+                ->map(function ($reservation) {
+                    // Extraer solo la hora de datetime
+                    $time = date('H:i', strtotime($reservation->datetime));
+                    
+                    return [
+                        'id' => $reservation->id,
+                        'time' => $time,
+                        'tables_ids' => $reservation->tables_ids,
+                        'guests' => $reservation->guests,
+                        'status' => $reservation->status
+                    ];
+                });
+
+            return response()->json($reservations);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al obtener las reservas',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

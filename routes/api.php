@@ -35,6 +35,7 @@ Route::middleware('auth:api')->group(function () {
     // Reservations - CRUD completo
     Route::get('my-reservations', [ReservationController::class, 'myReservations']);
     Route::apiResource('reservations', ReservationController::class);
+    Route::get('/reservations/date/{date}', [ReservationController::class, 'getByDate']);
     
     // Rutas de configuración
     Route::get('/config', [ConfigController::class, 'getConfig']);
