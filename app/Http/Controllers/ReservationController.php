@@ -24,7 +24,7 @@ class ReservationController extends Controller
             $request->validate([
                 'user_id' => 'required|exists:users,id',
                 'guests' => 'required|integer|min:1',
-                'datetime' => 'required|date|after:now',
+                'datetime' => 'required|date',
                 'status' => 'required|in:pending,confirmed,cancelled,completed',
                 'tables_ids' => 'nullable|array'
             ]);
@@ -70,7 +70,8 @@ class ReservationController extends Controller
 
     public function show(Reservation $reservation)
     {
-        if ($reservation->user_id !== Auth::id()) {
+        // Si es admin, puede ver cualquier reserva
+        if (auth()->user()->role !== 'admin' && $reservation->user_id !== Auth::id()) {
             return response()->json(['message' => 'No autorizado'], 403);
         }
         return $reservation->load(['user', 'tables']);
@@ -181,7 +182,10 @@ class ReservationController extends Controller
                         'time' => $time,
                         'tables_ids' => $reservation->tables_ids,
                         'guests' => $reservation->guests,
-                        'status' => $reservation->status
+                        'status' => $reservation->status,
+                        'user_info' => $reservation->user_info,
+                        'user_id' => $reservation->user_id,
+                        'datetime' => $reservation->datetime
                     ];
                 });
 
@@ -193,5 +197,48 @@ class ReservationController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function getByDateAndShift(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date',
+            'shift' => 'required|in:lunch,dinner'
+        ]);
+
+        $reservations = Reservation::whereDate('datetime', $request->date)
+            ->where('shift', $request->shift)
+            ->with(['user', 'table'])
+            ->orderBy('datetime')
+            ->get();
+
+        return response()->json($reservations);
+    }
+
+    public function assignTable(Request $request, $id)
+    {
+        $request->validate([
+            'table_id' => 'required|exists:tables,id'
+        ]);
+
+        $reservation = Reservation::findOrFail($id);
+        
+        // Verificar si la mesa está disponible para esta fecha y turno
+        $existingReservation = Reservation::where('table_id', $request->table_id)
+            ->whereDate('datetime', $reservation->datetime)
+            ->where('shift', $reservation->shift)
+            ->where('id', '!=', $id)
+            ->first();
+
+        if ($existingReservation) {
+            return response()->json([
+                'message' => 'La mesa ya está ocupada para este horario'
+            ], 422);
+        }
+
+        $reservation->table_id = $request->table_id;
+        $reservation->save();
+
+        return response()->json($reservation->load('table'));
     }
 }

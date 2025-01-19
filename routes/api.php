@@ -37,6 +37,8 @@ Route::middleware(['jwt.auth'])->group(function () {
     Route::get('my-reservations', [ReservationController::class, 'myReservations']);
     Route::apiResource('reservations', ReservationController::class);
     Route::get('/reservations/date/{date}', [ReservationController::class, 'getByDate']);
+    Route::get('/bookings', [ReservationController::class, 'getByDateAndShift']);
+    Route::post('/bookings/{id}/assign-table', [ReservationController::class, 'assignTable']);
     
     // Map Layouts
     Route::get('/map-layouts', [MapLayoutController::class, 'index']);
