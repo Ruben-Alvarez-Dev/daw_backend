@@ -20,10 +20,10 @@ class User extends Authenticatable implements JWTSubject
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'password',
         'role',
-        'visits',
-        'phone'
+        'active_until'
     ];
 
     /**
@@ -43,7 +43,7 @@ class User extends Authenticatable implements JWTSubject
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password' => 'hashed'
+        'active_until' => 'datetime'
     ];
 
     /**
@@ -72,5 +72,30 @@ class User extends Authenticatable implements JWTSubject
     public function reservations()
     {
         return $this->hasMany(Reservation::class);
+    }
+
+    // Scope para obtener solo usuarios activos
+    public function scopeActive($query)
+    {
+        return $query->where(function($q) {
+            $q->whereNull('active_until')
+              ->orWhere('active_until', '>', now());
+        });
+    }
+
+    // Scope para validación única solo entre usuarios activos
+    public function scopeUniqueActive($query, $field, $value, $ignoreId = null)
+    {
+        $query->where($field, $value)
+              ->where(function($q) {
+                  $q->whereNull('active_until')
+                    ->orWhere('active_until', '>', now());
+              });
+
+        if ($ignoreId) {
+            $query->where('id', '!=', $ignoreId);
+        }
+
+        return $query;
     }
 }

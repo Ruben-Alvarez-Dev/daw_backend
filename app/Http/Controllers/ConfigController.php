@@ -9,49 +9,54 @@ class ConfigController extends Controller
 {
     private $configFile = 'restaurant-config.json';
 
+    private function getDefaultConfig()
+    {
+        return [
+            'totalCapacity' => 0,
+            'timeEstimateSmall' => 60,
+            'timeEstimateLarge' => 90,
+            'timeInterval' => 15,
+            'simultaneousTables' => 2,
+            'openingHours' => [
+                'afternoon' => [
+                    'open' => '13:00',
+                    'close' => '16:00'
+                ],
+                'evening' => [
+                    'open' => '20:00',
+                    'close' => '23:30'
+                ]
+            ]
+        ];
+    }
+
     public function getConfig()
     {
+        $defaultConfig = $this->getDefaultConfig();
+
         if (!Storage::exists($this->configFile)) {
-            // Configuración por defecto
-            $defaultConfig = [
-                'totalCapacity' => 0,
-                'timeEstimateSmall' => 60,
-                'timeEstimateLarge' => 90,
-                'timeInterval' => 15,
-                'simultaneousTables' => 2,
-                'openingHours' => [
-                    'afternoon' => [
-                        'open' => '13:00',
-                        'close' => '16:00'
-                    ],
-                    'evening' => [
-                        'open' => '20:00',
-                        'close' => '23:30'
-                    ]
-                ]
-            ];
             Storage::put($this->configFile, json_encode($defaultConfig, JSON_PRETTY_PRINT));
             return response()->json($defaultConfig);
         }
 
-        $config = json_decode(Storage::get($this->configFile), true);
+        $storedConfig = json_decode(Storage::get($this->configFile), true);
         
-        // Asegurar que existan los campos necesarios
-        if (!isset($config['simultaneousTables'])) {
-            $config['simultaneousTables'] = 2;
-        }
-        if (!isset($config['timeInterval'])) {
-            $config['timeInterval'] = 15;
-        }
+        // Hacer merge recursivo para mantener todos los campos, incluyendo arrays anidados
+        $config = array_replace_recursive($defaultConfig, $storedConfig);
         
+        // Guardar la configuración actualizada
         Storage::put($this->configFile, json_encode($config, JSON_PRETTY_PRINT));
+        
         return response()->json($config);
     }
 
     public function updateConfig(Request $request)
     {
-        $config = $request->all();
-        Storage::put($this->configFile, json_encode($config, JSON_PRETTY_PRINT));
-        return response()->json(['message' => 'Configuración actualizada']);
+        $config = json_decode(Storage::get($this->configFile), true) ?? $this->getDefaultConfig();
+        $newConfig = array_replace_recursive($config, $request->all());
+        
+        Storage::put($this->configFile, json_encode($newConfig, JSON_PRETTY_PRINT));
+        
+        return response()->json($newConfig);
     }
 }

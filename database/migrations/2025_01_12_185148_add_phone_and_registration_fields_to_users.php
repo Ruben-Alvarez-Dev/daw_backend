@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('password')->nullable()->change();
 
             // Añadir nuevos campos
-            $table->string('phone')->nullable()->unique()->after('email');
             $table->boolean('is_registered')->default(false)->after('phone');
             $table->timestamp('registration_completed_at')->nullable()->after('is_registered');
         });
@@ -34,7 +33,7 @@ return new class extends Migration
             $table->string('password')->nullable(false)->change();
 
             // Eliminar los nuevos campos
-            $table->dropColumn(['phone', 'is_registered', 'registration_completed_at']);
+            $table->dropColumn(['is_registered', 'registration_completed_at']);
         });
     }
 };

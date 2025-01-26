@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Table;
+use App\Models\MapTemplate;
+use Database\Seeders\MapSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -19,23 +21,44 @@ class DatabaseSeeder extends Seeder
             'visits' => 0
         ]);
 
+        // Create default map template
+        MapTemplate::create([
+            'name' => 'Default Template',
+            'zone' => 'salon',
+            'is_default' => true,
+            'elements' => []
+        ]);
+
         // Create some tables
         Table::create([
-            'number' => 1,
+            'name' => 'Mesa 1',
             'capacity' => 2,
-            'status' => 'available'
+            'status' => 'available',
+            'map_template_id' => 1,
+            'position' => ['x' => 0, 'y' => 0],
+            'active_from' => now()
         ]);
 
         Table::create([
-            'number' => 2,
+            'name' => 'Mesa 2',
             'capacity' => 4,
-            'status' => 'available'
+            'status' => 'available',
+            'map_template_id' => 1,
+            'position' => ['x' => 1, 'y' => 0],
+            'active_from' => now()
         ]);
 
         Table::create([
-            'number' => 3,
+            'name' => 'Mesa 3',
             'capacity' => 6,
-            'status' => 'available'
+            'status' => 'available',
+            'map_template_id' => 1,
+            'position' => ['x' => 2, 'y' => 0],
+            'active_from' => now()
+        ]);
+
+        $this->call([
+            MapSeeder::class,
         ]);
     }
 }

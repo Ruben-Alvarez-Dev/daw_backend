@@ -2,25 +2,45 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Table extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
+        'map_template_id',
         'name',
         'capacity',
-        'status'
+        'position',
+        'active_from',
+        'active_until'
     ];
 
     protected $casts = [
-        'capacity' => 'integer',
+        'position' => 'array',
+        'active_from' => 'date',
+        'active_until' => 'date'
     ];
 
-    public function reservations()
+    // Relationships
+    public function mapTemplate(): BelongsTo
     {
-        return $this->hasMany(Reservation::class);
+        return $this->belongsTo(MapTemplate::class);
+    }
+
+    public function shiftHistories(): HasMany
+    {
+        return $this->hasMany(ShiftHistory::class);
+    }
+
+    // Scopes
+    public function scopeActiveAt($query, string $date)
+    {
+        return $query->where('active_from', '<=', $date)
+                    ->where(function($q) use ($date) {
+                        $q->whereNull('active_until')
+                          ->orWhere('active_until', '>=', $date);
+                    });
     }
 }
