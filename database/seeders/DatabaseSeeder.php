@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Table;
 use App\Models\MapTemplate;
 use Database\Seeders\MapSeeder;
+use Database\Seeders\InitialMapSetupSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -14,51 +15,23 @@ class DatabaseSeeder extends Seeder
     {
         // Create admin user
         User::create([
-            'name' => 'Admin',
+            'name' => 'admin',
             'email' => 'admin@admin.com',
             'password' => bcrypt('admin'),
-            'role' => 'admin',
-            'visits' => 0
+            'phone' => '123456789',
+            'role' => 'admin'
         ]);
 
-        // Create default map template
-        MapTemplate::create([
-            'name' => 'Default Template',
-            'zone' => 'salon',
-            'is_default' => true,
-            'elements' => []
-        ]);
-
-        // Create some tables
-        Table::create([
-            'name' => 'Mesa 1',
-            'capacity' => 2,
-            'status' => 'available',
-            'map_template_id' => 1,
-            'position' => ['x' => 0, 'y' => 0],
-            'active_from' => now()
-        ]);
-
-        Table::create([
-            'name' => 'Mesa 2',
-            'capacity' => 4,
-            'status' => 'available',
-            'map_template_id' => 1,
-            'position' => ['x' => 1, 'y' => 0],
-            'active_from' => now()
-        ]);
-
-        Table::create([
-            'name' => 'Mesa 3',
-            'capacity' => 6,
-            'status' => 'available',
-            'map_template_id' => 1,
-            'position' => ['x' => 2, 'y' => 0],
-            'active_from' => now()
-        ]);
+        // Create tables
+        for ($i = 1; $i <= 10; $i++) {
+            Table::create([
+                'name' => 'Mesa ' . $i,
+                'capacity' => rand(2, 8)
+            ]);
+        }
 
         $this->call([
-            MapSeeder::class,
+            InitialMapSetupSeeder::class
         ]);
     }
 }

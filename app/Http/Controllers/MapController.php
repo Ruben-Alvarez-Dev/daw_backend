@@ -3,40 +3,71 @@
 namespace App\Http\Controllers;
 
 use App\Models\Map;
-use Illuminate\Http\Request;
+use App\Models\MapHistory;
+use App\Http\Requests\MapRequest;
+use App\Http\Resources\MapResource;
+use Illuminate\Support\Facades\Auth;
 
 class MapController extends Controller
 {
     public function index()
     {
-        return response()->json(Map::first());
+        $maps = Map::with(['zone'])->get();
+        return MapResource::collection($maps);
     }
 
-    public function store(Request $request)
+    public function store(MapRequest $request)
     {
-        $validated = $request->validate([
-            'layout_data' => 'required|array'
+        $map = Map::create($request->validated());
+        
+        // Create history record
+        MapHistory::create([
+            'map_id' => $map->id,
+            'user_id' => Auth::id(),
+            'content' => $map->content,
+            'action' => 'create'
         ]);
 
-        // Solo permitimos un mapa
-        $map = Map::first();
-        if ($map) {
-            $map->update($validated);
-        } else {
-            $map = Map::create($validated);
-        }
-
-        return response()->json($map);
+        return new MapResource($map);
     }
 
-    public function update(Request $request, Map $map)
+    public function show(Map $map)
     {
-        $validated = $request->validate([
-            'layout_data' => 'required|array'
+        return new MapResource($map->load(['zone', 'history']));
+    }
+
+    public function update(MapRequest $request, Map $map)
+    {
+        // Create history record before update
+        MapHistory::create([
+            'map_id' => $map->id,
+            'user_id' => Auth::id(),
+            'content' => $map->content,
+            'action' => 'update'
         ]);
 
-        $map->update($validated);
+        $map->update($request->validated());
+        return new MapResource($map);
+    }
 
-        return response()->json($map);
+    public function destroy(Map $map)
+    {
+        // Create history record before delete
+        MapHistory::create([
+            'map_id' => $map->id,
+            'user_id' => Auth::id(),
+            'content' => $map->content,
+            'action' => 'delete'
+        ]);
+
+        $map->delete();
+        return response()->noContent();
+    }
+
+    public function history(Map $map)
+    {
+        return MapHistoryResource::collection(
+            $map->history()->with('user')->orderBy('created_at', 'desc')->get()
+        );
     }
 }

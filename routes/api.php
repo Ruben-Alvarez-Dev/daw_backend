@@ -12,6 +12,9 @@ use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\ShiftHistoryController;
 use App\Http\Controllers\MapController;
 use App\Http\Controllers\TemplateController;
+use App\Http\Controllers\ZoneController;
+use App\Http\Controllers\ShiftZoneController;
+use App\Http\Controllers\ShiftZoneTableController;
 
 // Rutas públicas de autenticación
 Route::controller(AuthController::class)->group(function () {
@@ -68,6 +71,16 @@ Route::middleware(['jwt.auth'])->group(function () {
         Route::delete('/templates/{mapTemplate}', [MapTemplateController::class, 'destroy']);
         Route::get('/templates/default/{zone}', [MapTemplateController::class, 'getDefaultTemplate']);
     });
+    
+    // Map Management Routes
+    Route::apiResource('zones', ZoneController::class);
+    Route::apiResource('maps', MapController::class);
+    Route::get('maps/{map}/history', [MapController::class, 'history']);
+    
+    // Shift Management Routes
+    Route::apiResource('shift-zones', ShiftZoneController::class);
+    Route::apiResource('shift-zone-tables', ShiftZoneTableController::class);
+    Route::get('shift-zones/{shiftZone}/tables', [ShiftZoneTableController::class, 'byShiftZone']);
     
     // Mapas
     Route::get('/map', [MapController::class, 'index']);
